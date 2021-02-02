@@ -5,6 +5,7 @@
 #include <string.h>
 #define LOOP while(1)
 
+//ENUMS
 enum {
     PLAY_WITH_FRIEND = 1,
     PLAY_WITH_BOT,
@@ -17,6 +18,7 @@ enum {
     BOT
 };
 
+//STRUCTS
 typedef struct Ship{
     int size;
     int start_x;
@@ -31,12 +33,14 @@ typedef struct Player{
     struct Playerm * next;
 }Player;
 
+//GLOBAL VALUES
 char map1[10][10];
 char map2[10][10];
 Player * players = NULL;
 Ship * ships1 = NULL;
 Ship * ships2 = NULL;
 
+//FUNCTIONS
 int getInt();
 char getChar();
 void clear();
@@ -46,6 +50,8 @@ void startGame();
 void loadGame();
 void loadLastGame();
 void scoreboard();
+
+
 
 int main(){
 	LOOP
