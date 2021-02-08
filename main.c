@@ -4,6 +4,8 @@
 #include <conio.h>
 #include <string.h>
 #define LOOP while(1)
+#define WATER 'w'
+#define NEIGHBOUR 'n'
 
 //ENUMS
 enum {
@@ -36,8 +38,7 @@ typedef struct Player{
 }Player;
 
 //GLOBAL VALUES
-char map1[10][10];
-char map2[10][10];
+char map[2][10][10];
 Player * players = NULL;
 Ship * ships1 = NULL;
 Ship * ships2 = NULL;
@@ -53,13 +54,15 @@ void loadGame();
 void loadLastGame();
 void scoreboard();
 void putShips();
-void getShipCoordinates(int size, char map [10][10], struct Ship * ships, char n);
-bool checkValidation();
-bool IsOccupied(char);
+void getShipCoordinates(int size, int mapNum, Ship * ships, char n);
+bool IsOccupied(char c);
 int minimum(int a, int b);
 int maximum(int a, int b);
 int neighbours();
-void printMap();
+void printMap(int n,bool showAll);
+int getNumberBetween(int min, int max);
+Player * choosePlayer();
+
 
 int main(){
     LOOP{
@@ -94,14 +97,80 @@ void loadGame() {
 }
 
 void startGame(int mode){
-    Player player1, player2;
-    //player 1 = choosePlayer(null);
-    putShips(map1, ships1);
-    //player 2 = choosePlayer(null / player1);
-    //putShips(player2);
+    for(int i = 0;i < 2;i++)
+    {
+        for(int j = 0;j < 10;j++)
+        {
+            for(int k = 0;k < 10;k++)
+            {
+                map[i][j][k] = 'w';
+            }
+        }
+    }
+    Player * player1 = choosePlayer();
+    Player * player2;
+    if(mode == PLAYER)
+        player2 = choosePlayer();
+
+    putShips(0, ships1);
+    if(mode == PLAYER)
+        putShips(1, ships2);
+
 }
 
-void putShips(char map[10][10], struct Ship * ships){
+Player * choosePlayer() {
+    clear();
+    printf("1. Choose user.\n");
+    printf("2. Create new user.");
+    int input = getNumberBetween(1,2);
+    clear();
+    if(input == 1)
+    {
+        Player * current = players;
+        int i = 0;
+        while(current != NULL)
+        {
+            i++;
+            printf("%d. %s (%d)\n" , i , current->name ,current->score );
+            current = current->next;
+        }
+        printf("0. cancel");
+        int choose = getNumberBetween(0,i);
+        if(choose == 0)return choosePlayer();
+        current = players;
+        i = 0;
+        while(1)
+        {
+            i++;
+            if(i == choose)
+                return current;
+            current = current->next;
+        }
+    }
+    else
+    {
+        Player * newPlayer = (Player*) malloc(sizeof(struct Player));
+        printf("Enter name: ");
+        gets(newPlayer->name);
+        while(strlen(newPlayer->name) < 2)
+        {
+            gets(newPlayer->name);
+        }
+        newPlayer->score = 0;
+        newPlayer->next = NULL;
+        if(players == NULL)
+        {
+            players = newPlayer;
+            return newPlayer;
+        }
+        Player * current = players;
+        while(current->next != NULL) current = current->next;
+        current->next = newPlayer;
+        return newPlayer;
+    }
+}
+
+void putShips(int mapNum, struct Ship * ships){
     printf("------- SET YOUR MAP -------\n\n");
     printf(" You Have 10 Ships in total: \n");
     printf(" 1 ship with the size of 5 \n");
@@ -109,132 +178,116 @@ void putShips(char map[10][10], struct Ship * ships){
     printf(" 3 ships with the size of 2\n");
     printf(" 4 ships with the size of 1\n");
     printf("-----------------------------\n");
-    getShipCoordinates(5, map, ships, 'f');
-    getShipCoordinates(3, map, ships, 'g');
-    getShipCoordinates(3, map, ships, 'h');
-    getShipCoordinates(2, map, ships, 'i');
-    getShipCoordinates(2, map, ships, 'j');
-    getShipCoordinates(2, map, ships, 'k');
-    getShipCoordinates(1, map, ships, 'l');
-    getShipCoordinates(1, map, ships, 'm');
-    getShipCoordinates(1, map, ships, 'n');
-    getShipCoordinates(1, map, ships, 'o');
+    getShipCoordinates(5, mapNum, ships, 'a');
+    getShipCoordinates(3, mapNum, ships, 'b');
+    getShipCoordinates(3, mapNum, ships, 'c');
+    getShipCoordinates(2, mapNum, ships, 'd');
+    getShipCoordinates(2, mapNum, ships, 'e');
+    getShipCoordinates(2, mapNum, ships, 'f');
+    getShipCoordinates(1, mapNum, ships, 'g');
+    getShipCoordinates(1, mapNum, ships, 'h');
+    getShipCoordinates(1, mapNum, ships, 'i');
+    getShipCoordinates(1, mapNum, ships, 'j');
 }
 
-void getShipCoordinates(int size, char map [10][10], struct Ship * ships, char n){
+void getShipCoordinates(int size, int mapNum, struct Ship * ships, char n){
 
-    char tempx[2], tempy[2];
+    int x , y;
     printf("---------------------------------\n");
     printf("| ->      Ship Size : %d      <- |\n", size);
     printf("---------------------------------\n");
-    Ship neww;
-    neww.size = size;
-
+    Ship * newShip = (Ship*) malloc(sizeof(Ship));
+    newShip->size = size;
+    newShip->name = n;
 
     while(true){
         printf("         Start Location x:");
-        scanf("%s", &tempx);
-        while(!checkValidation(tempx,1,10)){
-            printf("!!!ERROR!!! Out of boundry : Try again !!!ERROR!!! \n");
-            printf("         Start Location x:");
-            scanf("%s", &tempx);
+        scanf("%d", &x);
+        while(x < 0 || x > 9)
+        {
+            printf("Wrong input. try again.");
+            scanf("%d", &x);
         }
         printf("         Start Location y:");
-        scanf("%s", &tempy);
-        while(!checkValidation(tempy,1,10)){
-            printf("!!!ERROR!!! Out of boundry : Try again !!!ERROR!!! \n");
-            printf("         Start Location y:");
-            scanf("%s", &tempy);
-        }
-        int x = atoi(tempx); int y = atoi(tempy);
-        int neighbours = 0;
-        int i, j;
-        for( i = y - 2; i <= y ; ++i ){
-            for( j = x - 2; j <= y ; ++j ){
-                neighbours += IsOccupied( map[i][j] ) ? 1 : 0;
-            }
-        }
-        if( neighbours == 0 )
-            break;
-        printf("!!!ERROR!!! This cell or it's neighbours are occupied !!!ERROR!!!\n");
-    }
 
-    neww.start_x = atoi(tempx);
-    neww.start_y = atoi(tempy);
-
-    while(true){
+        scanf("%d", &y);
+        while(y < 0 || y > 9)
+        {
+            printf("Wrong input. try again.");
+            scanf("%d", &y);
+        }
+        newShip->start_x = x;
+        newShip->start_y = y;
         printf("         End Location x:");
-        scanf("%s", &tempx);
-        while(!checkValidation(tempx,1,10)){
-            printf("!!!ERROR!!! Out of boundry : Try again !!!ERROR!!! \n");
-            printf("         End Location x:");
-            scanf("%s", &tempx);
+        scanf("%d", &x);
+        while(x < 0 || x > 9)
+        {
+            printf("Wrong input. try again.");
+            scanf("%d", &x);
         }
         printf("         End Location y:");
-        scanf("%s", &tempy);
-        while(!checkValidation(tempy,1,10)){
-            printf("!!!ERROR!!! Out of boundry : Try again !!!ERROR!!! \n");
-            printf("         End Location y:");
-            scanf("%s", &tempy);
+        scanf("%d", &y);
+        while(y < 0 || y > 9)
+        {
+            printf("Wrong input. try again.");
+            scanf("%d", &y);
         }
 
-        int x = atoi(tempx); int y = atoi(tempy);
-        int temps;
-        if( x == neww.start_x ){
-            temps = abs(neww.start_y - y)+1;
-            if( temps != neww.size ){
+        newShip->end_x = x;
+        newShip->end_y = y;
+
+        if(x == newShip->start_x ){
+            int distance = abs(newShip->start_y - y);
+            if(distance != newShip->size ){
                 printf("!!!ERROR!!! size doesn't match !!!ERROR!!! \n");
                 continue;
             }
         }
-        else if( y == neww.start_y){
-            temps = abs(neww.start_x - x)+1;
-            if( temps != neww.size ){
+        else if(y == newShip->start_y){
+            int temp = abs(newShip->start_x - x);
+            if(temp != newShip->size ){
                 printf("!!!ERROR!!! size doesn't match' !!!ERROR!!! \n");
                 continue;
             }
         }
         else{
-            printf("!!!ERROR!!! length/width must be 1 !!!ERROR!!! \n");
+            printf("!!!ERROR!!! you can't place your ship like this !!!ERROR!!! \n");
             continue;
         }
-
-        int neighbours = 0;
-
-        int i, j;
-        for( i = neww.start_y - 2 ; i <= y ; ++i ){
-            for( j = neww.start_x - 2 ; j <= x ; ++j ){
-                neighbours += IsOccupied( map[i][j] ) ? 1 : 0;
-                map[i][j] = 'z';
+        bool flag = false;
+        for(int i = maximum(minimum(newShip->start_x , newShip->end_x) - 1,0) ; i <= minimum(maximum(newShip->start_x , newShip->end_x) + 1,9);i++)
+        {
+            for(int j = maximum(minimum(newShip->start_y , newShip->end_y) - 1,0) ; j <= minimum(maximum(newShip->start_y , newShip->end_y) + 1,9);j++)
+            {
+                if(IsOccupied(map[mapNum][i][j]))
+                {
+                    printf("!!!ERROR!!! You can't put your ship here !!!ERROR!!!\n");
+                    flag = true;
+                    break;
+                }
+            }
+            if(flag) break;
+        }
+        if(flag)continue;
+        for(int i = minimum(newShip->start_x,newShip->end_x);i <= maximum(newShip->start_x,newShip->end_x);i++)
+        {
+            for(int j = minimum(newShip->start_y,newShip->end_y);j <= maximum(newShip->start_y,newShip->end_y);j++)
+            {
+                map[mapNum][i][j] = newShip->name;
             }
         }
-        if( neighbours == 0 )
-            break;
-        printf("!!!ERROR!!! This cell or it's neighbours are occupied !!!ERROR!!!\n");
+
+        for(int i = maximum(minimum(newShip->start_x , newShip->end_x) - 1,0) ; i <= minimum(maximum(newShip->start_x , newShip->end_x) + 1,9);i++)
+        {
+            for(int j = maximum(minimum(newShip->start_y , newShip->end_y) - 1,0) ; j <= minimum(maximum(newShip->start_y , newShip->end_y) + 1,9);j++)
+            {
+                if(map[mapNum][i][j] == WATER)
+                    map[mapNum][i][j] = NEIGHBOUR;
+            }
+        }
+        break;
     }
-
-    int i, j;
-    neww.end_x = atoi(tempx);
-    neww.end_y = atoi(tempy);
-
-    int min = minimum( neww.start_x, neww.end_x);
-    int max = maximum( neww.start_x, neww.end_x);
-    neww.start_x = min;
-    neww.end_x = max;
-    min = minimum(neww.start_y, neww.end_y);
-    max = maximum(neww.start_y, neww.end_y);
-    neww.start_y = min;
-    neww.end_y = max;
-
-    for( i = neww.start_y - 1 ; i <= neww.end_y-1 ; ++i ){
-        for( j = neww.start_x - 1; j <= neww.end_x-1  ; ++j ){
-            map[i][j] = 's';
-            printf("\ndone\n");}
-    }
-    neww.name = n;
-
-    printMap(map);
-
+    printMap(mapNum,true);
 }
 
 int minimum(int a, int b){
@@ -252,38 +305,28 @@ int maximum(int a, int b){
 
 
 bool IsOccupied( char c ){
-    if( c >= 'f' && c <= 'o' )
+    if( c >= 'a' && c <= 'j' )
         return true;
     return false;
 }
 
-bool checkValidation( char n[], int s, int f){
-    int number = atoi(n);
-    if( number == 0 )
-        return false;
-    if ( number < s || number > f )
-        return false;
-    return true;
-}
 
-void printMap(char map[10][10] ){
-    int i, j;
-    printf("    1 - 2 - 3 - 4 - 5 - 6 - 7 - 8 - 9 - 10\n");
-    for( i = 0 ; i < 10 ; i++ ){
-        printf("   _______________________________________\n");
-        if( i == 9 )
-            printf("%d|", i+1);
-        else
-            printf(" %d|", i+1);
-        for( j = 0 ; j < 10 ; j++ ){
-            //if( map[i][j] == 's')
-            //	printf("   |");
-            //else
-            printf(" %c |", map[i][j]);
+void printMap(int mapNum,bool showAll){
+    if(showAll)
+    {
+        printf("_________________________________________\n");
+        for(int i = 0;i < 10;i++)
+        {
+            printf("|   |   |   |   |   |   |   |   |   |   |\n");
+            printf("|");
+            for(int j = 0;j < 10;j++)
+            {
+                printf(" %c |" , map[mapNum][i][j] != 'w' ? map[mapNum][i][j] : ' ');
+            }
+            printf("\n");
+            printf("|___|___|___|___|___|___|___|___|___|___|\n");
         }
-        printf("\n");
     }
-    printf("   _______________________________________\n");
 }
 
 void settings() {
@@ -325,6 +368,8 @@ void clear() {
     system("cls");
 }
 
+
+
 int mainMenu() {
 
     printf("________Main Menu________\n");
@@ -337,12 +382,15 @@ int mainMenu() {
     printf("| 6. Score Board        |\n");
     printf("| 7. Quit               |\n");
     printf("|_______________________|\n");
-    char temp = '0';
-    while(temp < '1' || temp > '7'){
-        temp = getChar();
-        //scanf("%c",&temp);
-        //printf("temp: %c\n", temp);
-    }
+    int choose = getNumberBetween(1,7);
     clear();
-    return temp-'0';
+    return choose;
+}
+
+int getNumberBetween(int min, int max) {
+    int temp = -1;
+    while(temp < min || temp > max){
+        temp = getChar() - '0';
+    }
+    return temp;
 }
